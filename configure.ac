@@ -1,0 +1,21 @@
+dnl Process this file with autoconf to produce a configure script
+AC_INIT([glpro], [3.50])
+AC_CONFIG_SRCDIR([cvar.c])
+
+AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
+AM_PROG_AS
+
+#AC_CANONICAL_HOST
+
+CFLAGS="-g -O2"
+
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_HEADER_STDC
+AC_HEADER_TIME
+
+AC_CONFIG_FILES([Makefile])
+
+AC_OUTPUT
