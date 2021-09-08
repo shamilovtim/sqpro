@@ -28,7 +28,7 @@ make unixded
 While sqpro compiles from `unixded` there are several other compilations in the Makefile including full blown GLQuake. Be sure not to compile any of the other stuff and stick to `unixded`.
 
 ## Configure your server and enable anticheat
-In your autoexec.cfg setup the server and be sure to use `sv_cullentities 2` for autocheat. Example of a useful config:
+In your autoexec.cfg setup the server and be sure to use `sv_cullentities 2` for anticheat. Example of a useful config:
 ```
 sv_aim 2
 sys_ticrate 0.04
