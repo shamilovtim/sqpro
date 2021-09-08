@@ -688,61 +688,40 @@ qboolean Q1BSP_Trace(model_t *model, int forcehullnum, int frame, vec3_t start, 
 	return trace->fraction != 1;
 }
 
+// R00k: Better anti-wallhack, less cpu usage too! (start)
+
+#define offsetrandom(MIN,MAX) ((rand() & 32767) * (((MAX)-(MIN)) * (1.0f / 32767.0f)) + (MIN))//LordHavoc
 
 qboolean SV_InvisibleToClient(edict_t *viewer, edict_t *seen)
 {
 	int i;
-	trace_t tr;
-	vec3_t start;
-	vec3_t end;
+	trace_t	tr;
+	vec3_t	start;
+	vec3_t	end;
+	extern trace_t SV_ClipMoveToEntity (edict_t *ent, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
+	int it;
+//	int vi;
 
-//	if (seen->v->solid == SOLID_BSP)
-//		return false;	//bsp ents are never culled this way
+//	vi = (int)viewer->v.colormap - 1;
 
-	//stage 1: check against their origin
-	VectorAdd(viewer->v.origin, viewer->v.view_ofs, start);
-	tr.fraction = 1;
+//	if (seen->visibletime[vi] > sv.time)//dont check this ent for this client every frame! Once per second is enough.
+//		return false;
 
-	if (!Q1BSP_Trace (sv.worldmodel, 1, 0, start, seen->v.origin, vec3_origin, vec3_origin, &tr))
-		return false;	//wasn't blocked
+	it = (int)(seen->v.items);
 
-
-	//stage 2: check against their bbox
-	for (i = 0; i < 8; i++)
+	//R00k: DM players want to see the Quad/Pent glow. Dont cull them at the moment...(cvar?)
+   	if ((strcmp(pr_strings + seen->v.classname, "player") == 0) && ((it & IT_QUAD) || (it & IT_INVULNERABILITY)))
 	{
-		end[0] = seen->v.origin[0] + ((i&1)?seen->v.mins[0]:seen->v.maxs[0]);
-		end[1] = seen->v.origin[1] + ((i&2)?seen->v.mins[1]:seen->v.maxs[1]);
-		end[2] = seen->v.origin[2] + ((i&4)?seen->v.mins[2]+0.1:seen->v.maxs[2]);
-
-		tr.fraction = 1;
-		if (!Q1BSP_Trace (sv.worldmodel, 1, 0, start, end, vec3_origin, vec3_origin, &tr))
-			return false;	//this trace went through, so don't cull
+		return false;
 	}
 
-	return true;
-}
+	if (sv_cullentities.value == 1)    //1 only check player models, 2 = check all ents
+	{
+		if (strcmp(pr_strings + seen->v.classname, "player"))
+			return false;
+	}
 
-#define offsetrandom(MIN,MAX) ((rand() & 32767) * (((MAX)-(MIN)) * (1.0f / 32767.0f)) + (MIN))
-
-extern trace_t SV_ClipMoveToEntity (edict_t *ent, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
-
-qboolean SV_InvisibleToClient2(edict_t *viewer, edict_t *seen)
-{
-    int		i;
-    trace_t	tr;
-    vec3_t	start;
-    vec3_t	end;
-
-    if (seen->v.movetype == MOVETYPE_PUSH )//dont cull doors and plats :(
-    {
-        return false;
-    }
-
-    if (sv_cullentities.value == 1)    //1 only check player models, 2 = check all ents
-    if (strcmp(pr_strings + seen->v.classname, "player"))    
-        return false;
-
-    memset (&tr, 0, sizeof(tr));                
+    memset (&tr, 0, sizeof(tr));
     tr.fraction = 1;
 
     start[0] = viewer->v.origin[0];
@@ -752,32 +731,41 @@ qboolean SV_InvisibleToClient2(edict_t *viewer, edict_t *seen)
     //aim straight at the center of "seen" from our eyes
     end[0] = 0.5 * (seen->v.mins[0] + seen->v.maxs[0]);
     end[1] = 0.5 * (seen->v.mins[1] + seen->v.maxs[1]);
-    end[2] = 0.5 * (seen->v.mins[2] + seen->v.maxs[2]);            
+    end[2] = 0.5 * (seen->v.mins[2] + seen->v.maxs[2]);
 
     tr = SV_ClipMoveToEntity (sv.edicts, start, vec3_origin, vec3_origin, end);
-    if (tr.fraction == 1)// line hit the ent
-            return false;
 
-    //last attempt to eliminate any flaws...
+	if (tr.fraction == 1)// line hit the ent
+	{
+//		seen->visibletime[vi] = sv.time + 1;//cvar this value?
+        return false;
+	}
+
+    memset (&tr, 0, sizeof(tr));
+    tr.fraction = 1;
+
+	//last attempt to eliminate any flaws...
     if ((!strcmp(pr_strings + seen->v.classname, "player")) || (sv_cullentities.value > 1))
     {
-        for (i = 0; i < 64; i++)
+        for (i = 0; i < 64; i++)//change 64 to something lower FIXME cvar?
         {
             end[0] = seen->v.origin[0] + offsetrandom(seen->v.mins[0], seen->v.maxs[0]);
             end[1] = seen->v.origin[1] + offsetrandom(seen->v.mins[1], seen->v.maxs[1]);
             end[2] = seen->v.origin[2] + offsetrandom(seen->v.mins[2], seen->v.maxs[2]);
 
             tr = SV_ClipMoveToEntity (sv.edicts, start, vec3_origin, vec3_origin, end);
-            if (tr.fraction == 1)// line hit the ent
+
+			if (tr.fraction == 1)// line hit the ent
 			{
-				    Con_DPrintf (va("found ent in %i hits\n", i));
-                    return false;
+//				seen->visibletime[vi] = sv.time + 1;//cvar this value?
+				return false;
 			}
         }
     }
-
     return true;
 }
+// R00k: Better anti-wallhack, less cpu usage too! (end)
+
 
 /*
 =============
@@ -825,7 +813,7 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg, qboolean nomap)
 
 // Baker theoretical sv_cullentities_trace
 
-			if (e<=svs.maxclients && sv_cullentities.value) {
+			if (sv_cullentities.value) {
 				if(SV_InvisibleToClient(clent, ent)) {
 					if (sv_cullentities_notify.value)
 						Con_Printf("Not visible\n");
@@ -834,11 +822,6 @@ void SV_WriteEntitiesToClient (edict_t	*clent, sizebuf_t *msg, qboolean nomap)
 					if (sv_cullentities_notify.value)
 						Con_Printf("Visible\n");
 				}
-			} else if (sv_cullentities.value >=2.0f) {
-				// Rook all-entities anti-wallhack
-				// This uses Rook's all-entities version on non-players
-				if (SV_InvisibleToClient2(clent,ent))
-					continue;
 			}
 
 // End Baker theoretical

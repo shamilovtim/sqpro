@@ -95,7 +95,7 @@ void Host_Status_f (void)
 	else
 		print = SV_ClientPrintf;
 
-	print ("host:    %s (anti-wallhack: %s)\n", Cvar_VariableString ("hostname"), sv_cullentities.value ? (sv_cullentities.value>=2.0f ? "maximum" : "players") : "off");
+	print ("host:    %s (anti-wallhack: %s)\n", Cvar_VariableString ("hostname"), sv_cullentities.value ? (sv_cullentities.value>=2.0f ? "maximum, glow enabled" : "players") : "off");
 	print ("version: ProQuake %4.2f %s\n", PROQUAKE_VERSION, pq_cheatfree ? "cheat-free" : ""); // JPG - added ProQuake
 	if (tcpipAvailable)
 		print ("tcp/ip:  %s\n", my_tcpip_address);
