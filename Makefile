@@ -210,7 +210,7 @@ CC = gcc
 CCAS = gcc
 CCASFLAGS = -g -O2
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -static -m32
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -522,7 +522,7 @@ glquake_glx_LDADD = -L/usr/X11/lib -L/usr/local/lib -lGL -lX11 -lXext -ldl -lXxf
 quake_x11_CFLAGS = -DX11
 quake_x11_CCASFLAGS = -DELF -x assembler-with-cpp
 quake_x11_LDADD = -L/usr/X11R6/lib -lX11 -lXext -lXxf86dga -lm
-unixded_CFLAGS = -DPQLINUX -Did386=0 -Dstricmp=strcasecmp -D_stricmp=strcasecmp -DDEBUG=1
+unixded_CFLAGS = -DPQLINUX -Did386=0 -Dstricmp=strcasecmp -D_stricmp=strcasecmp -DDEBUG=1 -static -m32
 unixded_CCASFLAGS = -DELF -x assembler-with-cpp
 unixded_LDADD = -lm -ldl
 all: all-am
